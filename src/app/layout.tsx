@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { RackVisionProvider } from "@/store/rack-vision-store";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from '@/components/theme-provider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,14 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
-      >
-        <RackVisionProvider>
-          {children}
-          <Toaster />
-        </RackVisionProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
+        <ThemeProvider>
+          <RackVisionProvider>
+            {children}
+            <Toaster />
+          </RackVisionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
