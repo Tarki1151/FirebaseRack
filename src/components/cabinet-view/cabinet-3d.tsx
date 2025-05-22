@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { useRef } from 'react';
 import { RoundedBox, Text } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import type { Cabinet, Device } from '@/types';
 import {
   CABINET_3D_WIDTH,
@@ -62,8 +63,29 @@ export function Cabinet3D({ cabinet }: Cabinet3DProps) {
     </mesh>
   );
 
+  const { viewport } = useThree();
+  
+  // Calculate text size based on viewport
+  const textSize = Math.min(viewport.width, viewport.height) * 0.1;
+  
   return (
     <group ref={cabinetRef}>
+      {/* Cabinet Name - Rotated 180 degrees */}
+      <group rotation={[0, Math.PI, 0]}>
+        <Text
+          position={[0, CABINET_3D_HEIGHT / 2 + 0.3, 0]}
+          fontSize={0.15}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.01}
+          outlineColor="#000000"
+          outlineOpacity={0.8}
+          maxWidth={CABINET_3D_WIDTH * 0.9}
+        >
+          {cabinet.name || `Cabinet ${cabinet.id}`}
+        </Text>
+      </group>
       {/* Cabinet frame */}
       {/* Left side */}
       <mesh
@@ -137,8 +159,8 @@ export function Cabinet3D({ cabinet }: Cabinet3DProps) {
         
         // Move devices 30% further inside the cabinet (20% + 10% more)
         const deviceOffsetZ = isFront 
-          ? -CABINET_3D_DEPTH/2 * 0.7 + DEVICE_3D_DEPTH/2
-          : CABINET_3D_DEPTH/2 * 0.7 - DEVICE_3D_DEPTH/2;
+          ? -CABINET_3D_DEPTH/2 * 0.65 + DEVICE_3D_DEPTH/2
+          : CABINET_3D_DEPTH/2 * 0.65 - DEVICE_3D_DEPTH/2;
         
         const deviceMaterial = createDeviceMaterial(deviceColor, isOversized);
         const deviceWidth = CABINET_3D_WIDTH * 0.9;
@@ -168,8 +190,9 @@ export function Cabinet3D({ cabinet }: Cabinet3DProps) {
                 <group rotation={[0, Math.PI, 0]}>
                   <Text
                     position={[0, 0, 0.001]}
+                    rotation={[0, 0, 0]}
                     fontSize={0.06}
-                    color="white"
+                    color="#1a5c33" // Dark green text
                     anchorX="center"
                     anchorY="middle"
                     maxWidth={deviceWidth * 0.9}
@@ -177,7 +200,7 @@ export function Cabinet3D({ cabinet }: Cabinet3DProps) {
                     letterSpacing={0.015}
                     textAlign="center"
                     outlineWidth={0.002}
-                    outlineColor="#000000"
+                    outlineColor="#e5e7eb" // Light gray outline for better contrast
                     outlineOpacity={0.8}
                     depthOffset={1}
                   >
@@ -195,18 +218,19 @@ export function Cabinet3D({ cabinet }: Cabinet3DProps) {
         if (i % 5 !== 0) return null;
         return (
           <group key={`u-marker-${i}`}>
-            <mesh position={[CABINET_3D_WIDTH/2 + 0.1, CABINET_3D_HEIGHT/2 - i * U_3D_HEIGHT, 0]}>
+            <mesh position={[CABINET_3D_WIDTH/2 + 0.1, -CABINET_3D_HEIGHT/2 + i * U_3D_HEIGHT, 0]}>
               <boxGeometry args={[0.1, 0.01, 0.1]} />
               <meshBasicMaterial color="#64748b" />
             </mesh>
             <Text
-              position={[CABINET_3D_WIDTH/2 + 0.2, CABINET_3D_HEIGHT/2 - i * U_3D_HEIGHT, 0]}
-              fontSize={0.1}
-              color="#64748b"
+              position={[CABINET_3D_WIDTH/2 + 0.2, -CABINET_3D_HEIGHT/2 + i * U_3D_HEIGHT, 0]}
+              fontSize={0.08}
+              color="#1a5c33"
               anchorX="left"
-              anchorY="middle"
+              anchorY="bottom"
+              rotation={[0, Math.PI, 0]}
             >
-              {i}U
+              {`${i}U`}
             </Text>
           </group>
         );
