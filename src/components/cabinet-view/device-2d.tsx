@@ -1,6 +1,6 @@
 
 import type { Device } from "@/types";
-import { U_HEIGHT_PX, DEVICE_COLOR_FRONT, DEVICE_COLOR_REAR, DEVICE_TEXT_COLOR, MAX_U } from "@/lib/constants";
+import { SCALED_U_HEIGHT_PX as U_HEIGHT_PX, DEVICE_COLOR_FRONT_BG as DEVICE_COLOR_FRONT, DEVICE_COLOR_REAR_BG as DEVICE_COLOR_REAR, DEVICE_TEXT_COLOR, MAX_U } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface Device2DProps {

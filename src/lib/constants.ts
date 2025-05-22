@@ -49,7 +49,7 @@ export const DEVICE_TEXT_COLOR = "text-slate-700";
 // For 3D Materials / Colors
 export const COLOR_CABINET_3D = 0x64748b; // slate-500
 export const COLOR_DEVICE_FRONT_3D = 0x7dd3fc; // sky-300
-export const COLOR_DEVICE_REAR_3D = 0xfbbf24; // amber-400
+export const COLOR_DEVICE_REAR_3D = 0xfcd34d; // amber-300
 export const COLOR_DEVICE_OVERSIZED_3D = 0xfca5a5; // red-300
 
 

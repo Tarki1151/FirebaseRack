@@ -1,4 +1,16 @@
 {
     "IDX.aI.enableInlineCompletion": true,
-    "IDX.aI.enableCodebaseIndexing": true
+    "IDX.aI.enableCodebaseIndexing": true,
+    "css.validate": true,
+    "editor.quickSuggestions": {
+        "strings": "on"
+    },
+    "tailwindCSS.includeLanguages": {
+        "typescript": "javascript",
+        "typescriptreact": "javascript"
+    },
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "css.lint.unknownAtRules": "ignore"
 }

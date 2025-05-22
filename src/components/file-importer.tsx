@@ -17,9 +17,10 @@ import {
 
 interface FileImporterProps {
   onFileUploadSuccess: (cabinets: Cabinet[]) => void;
+  children?: React.ReactNode;
 }
 
-const FileImporter: React.FC<FileImporterProps> = ({ onFileUploadSuccess }) => {
+const FileImporter: React.FC<FileImporterProps> = ({ onFileUploadSuccess, children }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -205,7 +206,7 @@ const FileImporter: React.FC<FileImporterProps> = ({ onFileUploadSuccess }) => {
     reader.readAsArrayBuffer(selectedFile);
   };
 
-  return (
+  const fileInput = (
     <div className="flex flex-col space-y-2">
       <div className="flex items-center space-x-2">
         <label htmlFor="file-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 cursor-pointer">
@@ -234,6 +235,18 @@ const FileImporter: React.FC<FileImporterProps> = ({ onFileUploadSuccess }) => {
       )}
     </div>
   );
+
+  return children ? (
+    <div onClick={(e) => e.stopPropagation()}>
+      {React.Children.map(children, (child) =>
+        React.cloneElement(child as React.ReactElement, {
+          onClick: handleProcessClick,
+          disabled: !selectedFile || isProcessing
+        })
+      )}
+      {fileInput}
+    </div>
+  ) : fileInput;
 };
 
 export default FileImporter;

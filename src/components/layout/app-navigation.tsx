@@ -3,12 +3,11 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRackVision } from "@/store/rack-vision-store";
-import { ViewToggle } from "@/components/ui/view-toggle";
 import { useRouter } from "next/navigation";
 import DataImporter from "@/components/data-importer";
 
 export function AppNavigation() {
-  const { cabinets, activeTab, setActiveTab, viewMode, setViewMode, importedFileName } = useRackVision();
+  const { cabinets, activeTab, setActiveTab, importedFileName } = useRackVision();
   const router = useRouter();
 
   const handleTabChange = (value: string) => {
@@ -38,9 +37,7 @@ export function AppNavigation() {
           )}
            <DataImporter />
         </div>
-        {activeTab !== "design" && importedFileName && (
-          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-        )}
+
       </div>
     </div>
   );

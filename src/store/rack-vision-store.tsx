@@ -19,7 +19,7 @@ interface RackVisionContextType {
   setImportedFileName: React.Dispatch<React.SetStateAction<string | null>>;
   isLoadingData: boolean;
   setIsLoadingData: React.Dispatch<React.SetStateAction<boolean>>;
-  // loadMockData: () => void; // Keep for manual loading if needed, but not auto
+  loadMockData: () => void; // Keep for manual loading if needed, but not auto
   clearAllCabinetData: () => void;
   updateCabinetPosition: (cabinetId: string, x: number, y: number) => void;
 }
@@ -79,18 +79,18 @@ export function RackVisionProvider({ children }: { children: ReactNode }) {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false); 
 
   // Function to explicitly load mock data if needed (e.g., by a button)
-  // const loadMockData = () => {
-  //   console.log("Store: Loading mock data...");
-  //   setIsLoadingData(true);
-  //   setTimeout(() => {
-  //     const parsedCabinets = parseMockData();
-  //     setCabinets(parsedCabinets);
-  //     setImportedFileName(MOCK_CABINET_DATA_FILE_NAME);
-  //     setActiveTab("design"); 
-  //     setIsLoadingData(false);
-  //     console.log("Store: Mock data loaded.", parsedCabinets);
-  //   }, 500);
-  // };
+  const loadMockData = () => {
+    console.log("Store: Loading mock data...");
+    setIsLoadingData(true);
+    setTimeout(() => {
+      const parsedCabinets = parseMockData();
+      setCabinets(parsedCabinets);
+      setImportedFileName(MOCK_CABINET_DATA_FILE_NAME);
+      setActiveTab("design"); 
+      setIsLoadingData(false);
+      console.log("Store: Mock data loaded.", parsedCabinets);
+    }, 500);
+  };
   
   // Remove automatic mock data loading on initial mount
   // useEffect(() => {
@@ -135,7 +135,7 @@ export function RackVisionProvider({ children }: { children: ReactNode }) {
         setImportedFileName,
         isLoadingData,
         setIsLoadingData,
-        // loadMockData, // Expose if manual loading is desired
+        loadMockData, // Exposed for manual loading
         clearAllCabinetData,
         updateCabinetPosition,
       }}

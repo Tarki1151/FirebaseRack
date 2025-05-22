@@ -1,115 +1,75 @@
 // src/app/(app)/design/3d/page.tsx
 'use client';
 
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Plane, Text } from '@react-three/drei';
+import React, { Suspense, useState } from 'react';
 import { useRackVision } from '@/store/rack-vision-store';
-import type { Cabinet, Device } from '@/types';
-import {
-  CABINET_3D_WIDTH,
-  CABINET_3D_HEIGHT,
-  CABINET_3D_DEPTH,
-  U_3D_HEIGHT,
-  DEVICE_3D_DEPTH,
-  MAX_U,
-  WORLD_SCALE, // To map 2D design positions to 3D world positions
-  COLOR_CABINET_3D,
-  COLOR_DEVICE_FRONT_3D,
-  COLOR_DEVICE_REAR_3D,     // Corrected: Was COLOR_DEVICE_REAR_BG previously by mistake
-  COLOR_DEVICE_OVERSIZED_3D,
-} from '@/lib/constants';
-
-// Simple 3D Cabinet Component
-const Cabinet3DModel: React.FC<{ cabinet: Cabinet }> = ({ cabinet }) => {
-  const cabinetWorldX = (cabinet.positionX || 0) * WORLD_SCALE;
-  // In 3D, Y is up. The 2D Y position from the design layout maps to 3D Z.
-  const cabinetWorldZ = (cabinet.positionY || 0) * WORLD_SCALE;
-  const cabinetWorldY = CABINET_3D_HEIGHT / 2; // Place bottom of cabinet on the ground (y=0)
-
-  return (
-    <group position={[cabinetWorldX, cabinetWorldY, cabinetWorldZ]}>
-      {/* Cabinet Box */}
-      <mesh>
-        <boxGeometry args={[CABINET_3D_WIDTH, CABINET_3D_HEIGHT, CABINET_3D_DEPTH]} />
-        <meshStandardMaterial color={COLOR_CABINET_3D} opacity={0.9} transparent />
-      </mesh>
-      {/* Cabinet Name Text (Optional) */}
-      <Text
-        position={[0, CABINET_3D_HEIGHT / 2 + 0.2, 0]} // Position above the cabinet
-        fontSize={0.1}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {cabinet.name}
-      </Text>
-
-      {/* Devices - Rendered inside the cabinet group, so positions are relative */}
-      {cabinet.devices.map(device => {
-        const isOversized = device.startU + device.uSize - 1 > MAX_U;
-        const effectiveSizeU = isOversized ? MAX_U - device.startU + 1 : device.uSize;
-        // Do not render if device effectively has no size or starts completely out of MAX_U range
-        if (effectiveSizeU <= 0 || device.startU > MAX_U) return null; 
-
-        const deviceHeight3D = effectiveSizeU * U_3D_HEIGHT;
-        
-        // Y position of the device center, from bottom of cabinet (0) to top (CABINET_3D_HEIGHT)
-        // U1 is at the bottom. 
-        // (device.startU - 1) * U_3D_HEIGHT is the bottom edge of the device from cabinet bottom (Y= -CABINET_3D_HEIGHT/2)
-        // Add half of deviceHeight3D to get to its center.
-        const deviceCenterY = ((device.startU - 1) * U_3D_HEIGHT) + (deviceHeight3D / 2) - (CABINET_3D_HEIGHT / 2);
-
-        let deviceColor = device.face === 'front' ? COLOR_DEVICE_FRONT_3D : COLOR_DEVICE_REAR_3D; // Corrected here
-        if (isOversized) {
-          deviceColor = COLOR_DEVICE_OVERSIZED_3D;
-        }
-
-        // Position device slightly forward/backward based on face
-        const deviceOffsetZ = device.face === 'front' ? -CABINET_3D_DEPTH / 2 + DEVICE_3D_DEPTH / 2 : CABINET_3D_DEPTH / 2 - DEVICE_3D_DEPTH / 2;
-
-        return (
-          <mesh 
-            key={device.id} 
-            position={[0, deviceCenterY, deviceOffsetZ]} // X=center, Y=calculated, Z=front/rear
-          >
-            <boxGeometry args={[CABINET_3D_WIDTH * 0.9, deviceHeight3D, DEVICE_3D_DEPTH]} /> {/* Slightly thinner than cabinet */}
-            <meshStandardMaterial color={deviceColor} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-};
+import { SingleCabinet3DView } from '@/components/cabinet-view/single-cabinet-3d-view';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Design3DPage() {
   const { cabinets, isLoadingData } = useRackVision();
+  const [selectedCabinetId, setSelectedCabinetId] = useState<string | null>(null);
+  
+  const selectedCabinet = cabinets.find(cabinet => cabinet.id === selectedCabinetId) || cabinets[0];
 
   if (isLoadingData && cabinets.length === 0) {
-    return <div className="flex items-center justify-center h-screen"><p>Loading 3D Scene...</p></div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading 3D Scene...</p>
+      </div>
+    );
+  }
+
+  if (!selectedCabinet) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-5rem)] p-4">
+        <h1 className="text-2xl font-bold mb-4">No Cabinets Found</h1>
+        <p className="text-muted-foreground mb-6">Please add a cabinet to view in 3D</p>
+        <Link href="/design">
+          <Button>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to Design
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 5rem)' /* Adjust height as needed */ }}>
-      <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
-        <Suspense fallback={null}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[-10, -10, -10]} intensity={0.5} />
-
-          {/* Ground Plane */}
-          <Plane args={[100, 100]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-            <meshStandardMaterial color="#555" />
-          </Plane>
-
-          {/* Render Cabinets */}
-          {cabinets.map((cabinet) => (
-            <Cabinet3DModel key={cabinet.id} cabinet={cabinet} />
-          ))}
-
-          <OrbitControls />
-        </Suspense>
-      </Canvas>
+    <div className="flex flex-col h-[calc(100vh-5rem)]">
+      <div className="p-4 border-b flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">3D Cabinet View</h1>
+          <p className="text-muted-foreground">{selectedCabinet.name}</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          {cabinets.length > 1 && (
+            <select
+              className="bg-background border rounded-md px-3 py-1 text-sm"
+              value={selectedCabinetId || ''}
+              onChange={(e) => setSelectedCabinetId(e.target.value || null)}
+            >
+              <option value="">Select a cabinet</option>
+              {cabinets.map((cabinet) => (
+                <option key={cabinet.id} value={cabinet.id}>
+                  {cabinet.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <Link href="/design">
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to Design
+            </Button>
+          </Link>
+        </div>
+      </div>
+      <div className="flex-1 relative">
+        <SingleCabinet3DView cabinet={selectedCabinet} />
+      </div>
     </div>
   );
 }
