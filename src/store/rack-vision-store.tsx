@@ -16,8 +16,11 @@ interface RackVisionContextType {
   activeTab: string; // 'design' or cabinetId
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
   importedFileName: string | null;
+  setImportedFileName: React.Dispatch<React.SetStateAction<string | null>>;
   isLoadingData: boolean;
-  loadMockData: () => void;
+  setIsLoadingData: React.Dispatch<React.SetStateAction<boolean>>;
+  // loadMockData: () => void; // Keep for manual loading if needed, but not auto
+  clearAllCabinetData: () => void;
   updateCabinetPosition: (cabinetId: string, x: number, y: number) => void;
 }
 
@@ -35,16 +38,16 @@ const mockCabinetSheetData: Record<string, CabinetSheetDeviceData[]> = {
     { Rack: 1, Face: "front", U: 2, "Brand/model": "Server X1" },
     { Rack: 3, Face: "front", U: 1, "Brand/model": "Patch Panel" },
     { Rack: 5, Face: "arka", U: 4, "Brand/model": "Storage Array Z" },
-    { Rack: 40, Face: "front", U: 3, "Brand/model": "UPS Unit" }, // Exceeds 42U if Rack is 1-based
+    { Rack: 40, Face: "front", U: 3, "Brand/model": "UPS Unit" },
   ],
   "Cabinet Bravo": [
     { Rack: 10, Face: "front", U: 2, "Brand/model": "Firewall G" },
     { Rack: 12, Face: "back", U: 1, "Brand/model": "Switch S1" },
     { Rack: 20, Face: "front", U: 3, "Brand/model": "Server Y2" },
   ],
-  "Cabinet Charlie": Array.from({ length: 15 }, (_, i) => ({ // To test capacity alerts
+  "Cabinet Charlie": Array.from({ length: 15 }, (_, i) => ({
     Rack: 1 + i * 3, Face: i % 2 === 0 ? "front" : "arka", U: 2, "Brand/model": `Device ${i + 1}`
-  })), // This will exceed 42U
+  })),
 };
 
 function parseMockData(): Cabinet[] {
@@ -67,39 +70,56 @@ function parseMockData(): Cabinet[] {
   });
 }
 
-
 export function RackVisionProvider({ children }: { children: ReactNode }) {
   const [cabinets, setCabinets] = useState<Cabinet[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
   const [activeTab, setActiveTab] = useState<string>("design");
   const [importedFileName, setImportedFileName] = useState<string | null>(null);
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  // Start isLoadingData as false. It will be set to true during actual loading operations.
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false); 
 
-  const loadMockData = () => {
-    setIsLoadingData(true);
-    // Simulate async data loading
-    setTimeout(() => {
-      const parsedCabinets = parseMockData();
-      setCabinets(parsedCabinets);
-      setImportedFileName(MOCK_CABINET_DATA_FILE_NAME);
-      setActiveTab("design"); // Reset to design tab after loading
-      setIsLoadingData(false);
-    }, 500);
-  };
+  // Function to explicitly load mock data if needed (e.g., by a button)
+  // const loadMockData = () => {
+  //   console.log("Store: Loading mock data...");
+  //   setIsLoadingData(true);
+  //   setTimeout(() => {
+  //     const parsedCabinets = parseMockData();
+  //     setCabinets(parsedCabinets);
+  //     setImportedFileName(MOCK_CABINET_DATA_FILE_NAME);
+  //     setActiveTab("design"); 
+  //     setIsLoadingData(false);
+  //     console.log("Store: Mock data loaded.", parsedCabinets);
+  //   }, 500);
+  // };
   
-  // Load mock data on initial mount for demo purposes
-  useEffect(() => {
-    loadMockData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Remove automatic mock data loading on initial mount
+  // useEffect(() => {
+  //   // Only load mock data if no user file has been imported and no cabinets exist
+  //   if (!importedFileName && cabinets.length === 0) {
+  //      loadMockData();
+  //   }
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []); // Run once on mount, or if cabinets/importedFileName change to re-evaluate
+
+  const clearAllCabinetData = () => {
+    console.log("Store: Clearing all cabinet data and imported file name.");
+    setCabinets([]);
+    setImportedFileName(null);
+    setActiveTab("design"); // Reset to design tab
+    // setIsLoadingData(false); // Already false or will be set by new load
+  };
 
 
   const updateCabinetPosition = (cabinetId: string, x: number, y: number) => {
-    setCabinets(prevCabinets =>
-      prevCabinets.map(cab =>
+    console.log(`Store: updateCabinetPosition called for ${cabinetId} to X=${x}, Y=${y}`);
+    setCabinets(prevCabinets => {
+      const updatedCabinets = prevCabinets.map(cab =>
         cab.id === cabinetId ? { ...cab, positionX: x, positionY: y } : cab
-      )
-    );
+      );
+      const targetCabinet = updatedCabinets.find(c => c.id === cabinetId);
+      console.log(`Store: Cabinet ${cabinetId} new state in updatedCabinets:`, targetCabinet);
+      return updatedCabinets;
+    });
   };
 
   return (
@@ -112,8 +132,11 @@ export function RackVisionProvider({ children }: { children: ReactNode }) {
         activeTab,
         setActiveTab,
         importedFileName,
+        setImportedFileName,
         isLoadingData,
-        loadMockData,
+        setIsLoadingData,
+        // loadMockData, // Expose if manual loading is desired
+        clearAllCabinetData,
         updateCabinetPosition,
       }}
     >

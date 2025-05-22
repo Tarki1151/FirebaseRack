@@ -1,74 +1,127 @@
+// src/components/design/draggable-cabinet-item.tsx
+'use client';
 
-"use client";
-import type { Cabinet } from "@/types";
-import { DESIGN_CABINET_WIDTH_PX, DESIGN_CABINET_DEPTH_PX, MAX_U } from "@/lib/constants";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
-import { useRackVision } from "@/store/rack-vision-store";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import React from 'react';
+import type { Cabinet } from '@/types';
+import {
+  MAX_U,
+  VISUAL_SCALE,
+  SCALED_U_HEIGHT_PX,
+  SCALED_CABINET_VERTICAL_PADDING_PX,
+  SCALED_CABINET_SIDE_PADDING_PX,
+  SCALED_CABINET_DETAIL_WIDTH_PX,
+  SCALED_TOTAL_VISUAL_HEIGHT_PX,
+  SCALED_USABLE_HEIGHT_PX,
+  DEVICE_COLOR_FRONT_BG,
+  DEVICE_COLOR_REAR_BG,
+} from '@/lib/constants';
+import { useRackVision } from '@/store/rack-vision-store';
 
 interface DraggableCabinetItemProps {
   cabinet: Cabinet;
   isOverlapping: boolean;
 }
 
-export function DraggableCabinetItem({ cabinet, isOverlapping }: DraggableCabinetItemProps) {
-  const router = useRouter();
+export const DraggableCabinetItem: React.FC<DraggableCabinetItemProps> = ({ cabinet, isOverlapping }) => {
   const { setActiveTab } = useRackVision();
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData("cabinetId", cabinet.id);
-    e.dataTransfer.setData("offsetX", e.nativeEvent.offsetX.toString());
-    e.dataTransfer.setData("offsetY", e.nativeEvent.offsetY.toString());
+    e.dataTransfer.setData('cabinetId', cabinet.id);
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Store the original, unscaled offset
+    const offsetX = (e.clientX - rect.left) / VISUAL_SCALE;
+    const offsetY = (e.clientY - rect.top) / VISUAL_SCALE;
+    e.dataTransfer.setData('offsetX', String(offsetX)); // Corrected syntax here
+    e.dataTransfer.setData('offsetY', String(offsetY));
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDoubleClick = () => {
     setActiveTab(cabinet.id);
-    router.push(`/cabinet/${cabinet.id}`);
   };
 
-  const totalUsedU = cabinet.devices.reduce((sum, device) => {
-    if (device.startU < 1 || device.startU > MAX_U) return sum;
-    const endU = device.startU + device.uSize - 1;
-    if (endU > MAX_U) return sum + (MAX_U - device.startU + 1);
-    return sum + device.uSize;
-  }, 0);
-  const exceedsCapacity = totalUsedU > MAX_U;
+  // Scaled header height
+  const headerHeight = 20 * VISUAL_SCALE;
 
+  const renderDevices = () => {
+    return cabinet.devices.map((device) => {
+      const deviceTop = (MAX_U - (device.startU + device.uSize - 1)) * SCALED_U_HEIGHT_PX;
+      const deviceHeight = device.uSize * SCALED_U_HEIGHT_PX;
+      return (
+        <div
+          key={device.id}
+          className={`absolute left-0 w-full flex items-center justify-center text-center overflow-hidden ${
+            device.face === 'front' ? DEVICE_COLOR_FRONT_BG : DEVICE_COLOR_REAR_BG
+          }`}
+          style={{
+            top: `${deviceTop}px`,
+            height: `${deviceHeight}px`,
+            fontSize: `${10 * VISUAL_SCALE}px`, // Scale font size
+            padding: `${2 * VISUAL_SCALE}px`,
+            borderBottom: `${1 * VISUAL_SCALE}px solid rgba(0,0,0,0.1)`,
+            boxSizing: 'border-box',
+          }}
+          title={`${device.brandModel} (U: ${device.startU}-${device.startU + device.uSize -1}, Face: ${device.face})`}
+        >
+          <span className="truncate" style={{ lineHeight: `${1.2 * VISUAL_SCALE}em` }}>{device.brandModel}</span>
+        </div>
+      );
+    });
+  };
 
   return (
     <div
-      draggable
+      draggable="true"
       onDragStart={handleDragStart}
       onDoubleClick={handleDoubleClick}
-      className="absolute cursor-grab active:cursor-grabbing"
+      className={`absolute cursor-grab rounded-md shadow-md hover:shadow-lg transition-shadow bg-slate-200 border ${ // Scaled border
+        isOverlapping ? 'border-red-500 ring-2 ring-red-500' : 'border-slate-400'
+      }`}
       style={{
-        left: cabinet.positionX ?? 0,
-        top: cabinet.positionY ?? 0,
-        width: DESIGN_CABINET_WIDTH_PX,
-        height: DESIGN_CABINET_DEPTH_PX,
+        left: cabinet.positionX || 0,
+        top: cabinet.positionY || 0,
+        width: `${SCALED_CABINET_DETAIL_WIDTH_PX}px`,
+        height: `${SCALED_TOTAL_VISUAL_HEIGHT_PX}px`,
+        boxSizing: 'border-box',
+        borderWidth: `${2 * VISUAL_SCALE}px`, // Scale border width if needed
       }}
-      title={`Drag to move. Double click to view details for ${cabinet.name}.`}
+      title={`Cabinet: ${cabinet.name}
+ID: ${cabinet.id}
+Position: (X: ${cabinet.positionX}, Y: ${cabinet.positionY})`}
     >
-      <Card
-        className={`w-full h-full flex flex-col items-center justify-center transition-all duration-150 ease-in-out hover:shadow-lg ${
-          isOverlapping ? "ring-2 ring-destructive ring-offset-2" : "ring-1 ring-transparent hover:ring-primary"
-        } ${exceedsCapacity ? "bg-red-100 dark:bg-red-900/30 border-destructive" : "bg-card"}`}
-      >
-        <CardHeader className="p-1 text-center">
-          <CardTitle className="text-xs font-medium truncate">
-            {cabinet.name}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-1 text-xs text-muted-foreground flex items-center justify-center">
-           {exceedsCapacity ? (
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          )}
-          <span className="ml-1">{totalUsedU}U/{MAX_U}U</span>
-        </CardContent>
-      </Card>
+      <div className="relative w-full h-full overflow-hidden flex flex-col">
+        <div 
+          className="bg-slate-700 text-white font-semibold text-center truncate flex items-center justify-center"
+          style={{
+             height: `${headerHeight}px`,
+             fontSize: `${10 * VISUAL_SCALE}px`,
+             padding: `${2*VISUAL_SCALE}px`,
+             flexShrink: 0 
+            }}
+        >
+          {cabinet.name}
+        </div>
+        <div 
+          className="relative bg-slate-50 flex-grow"
+          style={{
+            paddingTop: `${SCALED_CABINET_VERTICAL_PADDING_PX}px`,
+            paddingBottom: `${SCALED_CABINET_VERTICAL_PADDING_PX}px`,
+          }}
+        >
+            <div
+              className="relative mx-auto bg-white"
+              style={{
+                height: `${SCALED_USABLE_HEIGHT_PX}px`,
+                width: `calc(100% - ${2 * SCALED_CABINET_SIDE_PADDING_PX}px)`,
+                marginLeft: `${SCALED_CABINET_SIDE_PADDING_PX}px`,
+                marginRight: `${SCALED_CABINET_SIDE_PADDING_PX}px`,
+                boxShadow: `inset 0 0 ${2 * VISUAL_SCALE}px rgba(0,0,0,0.2)`,
+              }}
+            >
+              {renderDevices()}
+            </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
