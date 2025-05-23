@@ -20,7 +20,9 @@ export const metadata: Metadata = {
   title: "Rack Vision",
   description: "Visualize and design your server rack layouts.",
   icons: {
-    icon: "/images/favicon.ico",
+    icon: '/images/favicon.ico',
+    shortcut: '/images/favicon.ico',
+    apple: '/images/favicon.ico',
   },
 };
 
